@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branlette Record</title>
+    <style>
+        body {
+            background-color: #003366; /* Bleu smalt */
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            position: relative; /* Pour permettre le placement du bouton -1 */
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        #counter {
+            font-size: 2em;
+            color: white;
+            background-color: #A5C6FF; /* gris clair */
+            padding: 1px 15px;
+            border-radius: 5px;
+        }
+        #increment-btn, #decrement-btn {
+            background-color: #5A9BD5; /* Bleu barbeau */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 85px;
+            height: 85px;
+            font-size: 1.5em;
+            cursor: pointer;
+            margin: 20px;
+            transition: transform 0.1s ease-in-out; /* Animation */
+        }
+        #increment-btn:active, #decrement-btn:active {
+            transform: scale(1.2); /* Agrandit le bouton quand on clique */
+        }
+        #decrement-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 10%; /* carré arrondi */
+            position: absolute; /* Positionné en bas de la page */
+            bottom: 10px;
+        }
+        #history {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: #5A9BD5;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 80%;
+            overflow-y: auto;
+            width: 240px; /* Augmenté de 20% */
+        }
+        #history p {
+            font-size: 0.8em;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Branlette Record</h1>
+    <div id="counter">00</div>
+    
+    <button id="increment-btn">+1</button>
+    <button id="decrement-btn">-1</button>
+
+    <div id="history">
+        <h3>Historique</h3>
+    </div>
+
+    <!-- Import des scripts Firebase (v8) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        // Configuration de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-KIYCktoiZDPV9_2y8jFx0CYE4AYMFts",
+            authDomain: "compteur-5baf3.firebaseapp.com",
+            projectId: "compteur-5baf3",
+            storageBucket: "compteur-5baf3.appspot.com",
+            messagingSenderId: "243237100950",
+            appId: "1:243237100950:web:5d67324c25049eeafdd1b7"
+        };
+
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+        var compteurRef = db.collection('compteurs').doc('compteur_principal');
+
+        // Initialisation de la variable counter
+        let counter = 0;
+
+        // Fonction pour mettre à jour l'affichage du compteur
+        function updateCounterDisplay() {
+            document.getElementById('counter').innerText = counter < 10 ? '0' + counter : counter;
+        }
+
+        // Fonction pour ajouter un élément à l'historique avec la date et l'heure
+        function addHistory(action) {
+            const now = new Date();
+            const day = now.getDate() < 10 ? '0' + now.getDate() : now.getDate();
+            const month = (now.getMonth() + 1) < 10 ? '0' + (now.getMonth() + 1) : (now.getMonth() + 1); 
+            const dateString = day + '/' + month; // Format JJ/MM
+            const timeString = now.getHours() + 'h' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            const newHistory = document.createElement('p');
+            newHistory.textContent = "Utilisateur a ajouté " + action + " le " + dateString + " à " + timeString;
+            document.getElementById('history').appendChild(newHistory);
+        }
+
+        // Fonction pour incrémenter le compteur
+        function increment() {
+            console.log("Le bouton +1 a été cliqué");
+            counter++;
+            compteurRef.set({ valeur: counter })  // Firestore v8: on utilise .set() pour écrire
+                .then(() => {
+                    console.log("Compteur mis à jour dans Firestore");
+                    updateCounterDisplay();
+                    addHistory('+1');
+                })
+                .catch((error) => console.error("Erreur de mise à jour Firestore :", error));
+        }
+
+        // Fonction pour décrémenter le compteur
+        function decrement() {
+            console.log("Le bouton -1 a été cliqué");
+            counter--;
+            compteurRef.set({ valeur: counter })  // Firestore v8: on utilise .set() pour écrire
+                .then(() => {
+                    console.log("Compteur mis à jour dans Firestore");
+                    updateCounterDisplay();
+                })
+                .catch((error) => console.error("Erreur de mise à jour Firestore :", error));
+        }
+
+        // Récupération initiale de la valeur du compteur depuis Firestore
+        compteurRef.get().then((doc) => {
+            if (doc.exists) {
+                counter = doc.data().valeur;
+                updateCounterDisplay();
+            } else {
+                console.log("Document non trouvé !");
+            }
+        }).catch((error) => {
+            console.log("Erreur lors de la récupération du document:", error);
+        });
+
+        // Gestion des événements des boutons
+        document.getElementById('increment-btn').onclick = increment;
+        document.getElementById('decrement-btn').onclick = decrement;
+    </script>
+</body>
+</html>
